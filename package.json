@@ -1,0 +1,24 @@
+{
+  "name": "@snowseo/wordpress-plugin",
+  "version": "1.3.1",
+  "description": "SnowSEO WordPress Plugin",
+  "private": true,
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start",
+    "serve": "npx -y serve . -l 3200 --no-clipboard",
+    "plugin-zip": "pnpm build && rm -rf snowseo snowseo.zip && mkdir snowseo && cp snowseo.php readme.txt uninstall.php LICENSE.txt snowseo/ && cp -R build includes snowseo/ && zip -r snowseo.zip snowseo && rm -rf snowseo && unzip -l snowseo.zip",
+    "plugin-zip:py": "pnpm build && python3 zip-plugin.py",
+    "wp-env": "wp-env",
+    "wp:start": "wp-env start",
+    "wp:stop": "wp-env stop",
+    "wp:destroy": "wp-env destroy",
+    "wp:logs": "wp-env logs",
+    "dev": "concurrently -n \"WP,JS\" -c \"cyan,yellow\" \"wp-env start\" \"wp-scripts start\""
+  },
+  "devDependencies": {
+    "@wordpress/env": "^10.0.0",
+    "@wordpress/scripts": "^30.0.0",
+    "concurrently": "^9.0.0"
+  }
+}

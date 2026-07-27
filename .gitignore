@@ -1,0 +1,15 @@
+# Dependencies (also ignored by the monorepo root, repeated here so the
+# standalone public mirror of this directory stays clean on its own).
+node_modules/
+vendor/
+
+snowseo.zip
+snowseo.tar.gz
+snowseo-zip*
+# Staging folder created by the `plugin-zip` script; removed on success,
+# only present if the script fails mid-run.
+/snowseo/
+# Legacy artifact names from pre-1.1.0 builds (kept ignored so old workspaces stay clean).
+snowseo-wordpress-plugin.zip
+snowseo-wordpress-plugin.tar.gz
+snowseo-wordpress-plugin-zip*

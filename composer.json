@@ -1,0 +1,11 @@
+{
+    "name": "snowseo/wordpress-plugin",
+    "description": "SnowSEO WordPress plugin - IDE stubs for WordPress core",
+    "require-dev": {
+        "php-stubs/wordpress-stubs": "^6.7"
+    },
+    "config": {
+        "allow-plugins": false,
+        "sort-packages": true
+    }
+}

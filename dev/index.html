@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SnowSEO Plugin — Dev Preview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- WordPress Dashicons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/dashicons/0.9.0/css/dashicons.min.css" rel="stylesheet" />
+
+    <!-- React 18 from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- WordPress externals shim -->
+    <script>
+        window.wp = window.wp || {};
+        window.wp.element = React;
+        window.wp.element.render = ReactDOM.render;
+        window.wp.element.createRoot = ReactDOM.createRoot;
+
+        window.ReactJSXRuntime = {
+            jsx: function (type, props, key) {
+                var _props = Object.assign({}, props);
+                var children = _props.children;
+                delete _props.children;
+                if (key !== undefined) _props.key = key;
+                if (children !== undefined) {
+                    return React.createElement(type, _props, children);
+                }
+                return React.createElement(type, _props);
+            },
+            jsxs: function (type, props, key) {
+                var _props = Object.assign({}, props);
+                var children = _props.children;
+                delete _props.children;
+                if (key !== undefined) _props.key = key;
+                if (Array.isArray(children)) {
+                    return React.createElement.apply(null, [type, _props].concat(children));
+                }
+                return React.createElement(type, _props, children);
+            },
+            Fragment: React.Fragment,
+        };
+
+        window.snowseoData = {
+            version: '1.0.0',
+            restUrl: 'http://localhost/wp-json/snowseo/v1/',
+            nonce: 'dev-nonce-123',
+            adminUrl: 'http://localhost/wp-admin/',
+        };
+    </script>
+
+    <!-- Built CSS -->
+    <link rel="stylesheet" href="../build/index.css" />
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f0f0f1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="snowseo-root"></div>
+    <script src="../build/index.js"></script>
+</body>
+
+</html>
