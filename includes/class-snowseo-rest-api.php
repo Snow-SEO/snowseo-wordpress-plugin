@@ -1173,12 +1173,13 @@ class SnowSEO_Rest_API
 				'X-Plugin-Key'  => $api_key,
 			),
 			'body'    => wp_json_encode(array(
-				'apiKey'        => $api_key,
-				'siteUrl'       => home_url(),
-				'siteTitle'     => get_bloginfo('name'),
-				'wpVersion'     => get_bloginfo('version'),
-				'pluginVersion' => SNOWSEO_VERSION,
-				'connect'       => $connect,
+				'apiKey'          => $api_key,
+				'siteUrl'         => home_url(),
+				'siteTitle'       => get_bloginfo('name'),
+				'siteDescription' => get_bloginfo('description'),
+				'wpVersion'       => get_bloginfo('version'),
+				'pluginVersion'   => SNOWSEO_VERSION,
+				'connect'         => $connect,
 			)),
 		));
 

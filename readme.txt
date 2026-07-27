@@ -3,7 +3,7 @@ Contributors: kapybara
 Tags: seo, ai, content, publishing, ai-content
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -94,6 +94,9 @@ When SnowSEO sends a post with status `scheduled` and a future date, the plugin 
 When SnowSEO publishes a post via server-to-server call (authenticated with the site token rather than a WordPress login), the post is assigned to the first administrator on the site. If you want a specific user as the author of incoming posts, ensure that user is an administrator and has the lowest user ID among administrators.
 
 == Changelog ==
+
+= 1.3.2 =
+* The plugin now reports the site's tagline (Settings → General → Tagline) to SnowSEO when connecting, so it stays in sync instead of only being captured once at initial setup.
 
 = 1.3.1 =
 * Security: the `/invalidate` endpoint now requires this site's token in the `X-Plugin-Key` header. It previously accepted a team ID alone, which is an identifier rather than a secret, so anyone who knew it could disconnect a site.
