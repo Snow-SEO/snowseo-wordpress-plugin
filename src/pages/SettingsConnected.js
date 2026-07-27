@@ -113,10 +113,10 @@ export default function SettingsConnected() {
                     </div>
                 </div>
                 <a
-                    href={`${getAppUrl()}?openSettings=true&tab=integrations&subTab=cms-publishing&expand=wp`}
+                    href={`${getAppUrl()}?openSettings=true&tab=automation-settings&subTab=article`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="snowseo-banner__btn snowseo-banner__btn--outline"
+                    className="snowseo-banner__btn"
                 >
                     Manage in SnowSEO
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

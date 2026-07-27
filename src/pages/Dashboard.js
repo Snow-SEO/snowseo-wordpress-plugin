@@ -55,7 +55,7 @@ export default function Dashboard() {
         setManageOpen(false);
         switch (action) {
             case 'settings':
-                window.location.hash = '#/settings';
+                window.open(`${getAppUrl()}?openSettings=true&tab=integrations&subTab=cms-publishing&expand=wp`, '_blank', 'noopener,noreferrer');
                 break;
             case 'disconnect':
                 window.location.hash = '#/disconnect';
@@ -100,7 +100,7 @@ export default function Dashboard() {
                     </div>
                 </div>
                 <a
-                    href={`${getAppUrl()}`}
+                    href={`${getAppUrl()}?openSettings=true&tab=automation-settings&subTab=article`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="snowseo-banner__btn"
@@ -245,7 +245,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Pro Tip Banner */}
+            {/* Pro Tip Banner — disabled: "Auto-Internal Linking" claim is not accurate, revisit copy before re-enabling.
             <div className="snowseo-protip">
                 <div className="snowseo-protip__icon">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -269,6 +269,7 @@ export default function Dashboard() {
                     Learn More
                 </a>
             </div>
+            */}
         </div>
     );
 }
