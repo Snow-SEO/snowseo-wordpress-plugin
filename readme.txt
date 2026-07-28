@@ -3,7 +3,7 @@ Contributors: kapybara
 Tags: seo, ai, content, publishing, ai-content
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,27 +26,33 @@ The plugin itself does not generate content. All article generation, editing, an
 
 = Source code =
 
-The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.1`.
+The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.3`.
 
 = External service: SnowSEO =
 
-This plugin **requires** an account at SnowSEO (https://snowseo.com) and communicates with the SnowSEO API at `https://api.snowseo.com/v3` to function. By installing and connecting this plugin, you authorize the following data exchange:
+This plugin **requires** an account at SnowSEO (https://snowseo.com) and communicates with the SnowSEO API at `https://api.snowseo.com/v3` to function. Except for the public health check described below, communication begins only after a WordPress administrator connects the plugin with a SnowSEO site token. By connecting the plugin, you authorize the following data exchange:
 
-**Outbound** - data sent from your site to SnowSEO:
+**Data sent from your WordPress site to SnowSEO:**
 
-* On connect (`/integrations/wordpress/validate-plugin-key`) - the plugin API key (site token) you paste into Settings, your site URL (`home_url()`), your site title (`get_bloginfo('name')`), and your WordPress version (`get_bloginfo('version')`).
-* On status check (same endpoint, periodic) - the same fields as above, used to re-validate the connection.
+* On connect (`/integrations/wordpress/validate-plugin-key`) - the plugin API key (site token) you paste into Settings, your site URL, site title, site tagline, WordPress version, plugin version, and a flag indicating that the connection should be saved.
+* On connection status checks (same endpoint) - the same fields as above, used to re-validate the connection without creating a new one.
 * On disconnect (`/integrations/wordpress/plugin-disconnect`) - the plugin API key as an authentication header only.
-* On publish-from-dashboard (`/cms/publish`) - the article slug, the requested target status, and the plugin API key.
-* On article listing/single fetch (`/cms/articles*`) - pagination and status filters, plus the plugin API key.
+* On publish from the WordPress admin (`/cms/publish`) - the selected article slug, requested WordPress status, provider name, and plugin API key.
+* On article listing or single-article fetch (`/cms/articles*`) - pagination and status filters or the selected article slug, plus the plugin API key. SnowSEO returns the requested SnowSEO article data for display in the WordPress admin.
 * On settings fetch (`/integrations/wordpress/settings`) - the plugin API key only.
+* On publishing status synchronization (`/wp-json/snowseo/v1/posts-status`, authenticated with the site token) - the site returns WordPress post IDs, statuses, publication dates, and permalinks. SnowSEO can request specific post IDs or, when no IDs are supplied, up to the 100 most recently modified posts.
+* On a user-requested website audit autofix (`/wp-json/snowseo/v1/posts/by-url`, authenticated with the site token) - SnowSEO sends the selected public page URL, and the site returns the matching WordPress post or page ID, title, full content, status, and supported SnowSEO, Yoast, Rank Math, or SEOPress title, description, and canonical metadata. SnowSEO uses this data to prepare and apply the requested fix.
+* On the public health check (`/wp-json/snowseo/v1/ping`) - the site returns whether the plugin is reachable and its installed version. This endpoint does not return site content or credentials.
 
-**Inbound** - data received from SnowSEO and written into your WordPress database:
+**Data and commands received from SnowSEO:**
 
 * On server publish (`/wp-json/snowseo/v1/receive-publish`, authenticated with your site token) - article title, HTML content (sanitized via `wp_kses`), excerpt, target status, scheduled date, SnowSEO article ID, featured-image URL and caption, and SEO meta fields. These are written as a standard WordPress post.
+* On a user-requested website audit autofix (`/wp-json/snowseo/v1/posts/{id}/update`, authenticated with your site token) - an updated title, HTML content, or supported SEO metadata is written to the post or page selected for the fix.
+* On a user-requested unpublish or delete action (`/wp-json/snowseo/v1/posts/{id}`, authenticated with your site token) - the requested post ID is sent to WordPress. The plugin permanently deletes the post only if it was originally created by SnowSEO.
+* On site-token rotation (`/wp-json/snowseo/v1/invalidate`, authenticated with the previous site token) - SnowSEO can instruct the plugin to remove its stored site token and connection metadata. An optional SnowSEO team ID may be sent as a secondary connection check.
 * Plugin updates are delivered through WordPress.org only; this plugin does not download updates from SnowSEO or any other external server.
 
-No personally identifiable information about your visitors is sent to SnowSEO. Only site-level metadata (URL, title, WP version) and the plugin API key are transmitted.
+The plugin does not send visitor analytics, IP addresses, cookies, or WordPress user account data to SnowSEO. A post or page selected for an audit autofix is sent with its full content and may therefore contain personal information that the site owner included in that content.
 
 * SnowSEO Terms of Service: https://snowseo.com/terms-of-service
 * SnowSEO Privacy Policy: https://snowseo.com/privacy-policy
@@ -79,7 +85,7 @@ Yes. Signing up for any SnowSEO plan, including the 7-day free trial, requires a
 
 = What data does the plugin send to SnowSEO? =
 
-See the *External service: SnowSEO* section above. In short: your site URL, site title, WordPress version, and the plugin API key. No visitor data is transmitted.
+See the *External service: SnowSEO* section above. In short, the plugin can send connection metadata, the site token, publishing request details, post status and permalink data, and the content and SEO metadata of a post or page selected for an audit autofix. It does not send visitor analytics, IP addresses, cookies, or WordPress user account data.
 
 = How do I disconnect? =
 
@@ -95,54 +101,10 @@ When SnowSEO publishes a post via server-to-server call (authenticated with the 
 
 == Changelog ==
 
+= 1.3.3 =
+* Expanded the external-service disclosure to cover authenticated post status checks, website audit autofixes, deletion of SnowSEO-created posts, health checks, and site-token invalidation. No runtime behavior changed.
+
 = 1.3.2 =
 * The plugin now reports the site's tagline (Settings → General → Tagline) to SnowSEO when connecting, so it stays in sync instead of only being captured once at initial setup.
 
-= 1.3.1 =
-* Security: the `/invalidate` endpoint now requires this site's token in the `X-Plugin-Key` header. It previously accepted a team ID alone, which is an identifier rather than a secret, so anyone who knew it could disconnect a site.
-* Replaced `parse_url()` with `wp_parse_url()` for consistent behaviour across PHP versions.
-* Removed the unused `Domain Path` header and the redundant `load_plugin_textdomain()` call. WordPress loads translations for directory-hosted plugins automatically.
-* Prefixed a global variable and routed the head meta output through `wp_kses()` so the escaping path is unambiguous.
-* Documented the public source repository in this readme: https://github.com/Snow-SEO/snowseo-wordpress-plugin
-
-= 1.3.0 =
-* Added endpoints that let a SnowSEO website audit fix issues on pages you already have: resolve a post from its URL and update its title, content, or SEO metadata.
-* SnowSEO-managed SEO output now applies to any post SnowSEO has written meta title or description to, not only to posts it published.
-* Added a `/ping` health check so SnowSEO can confirm requests reach the plugin before attempting to publish.
-
-= 1.2.0 =
-* SnowSEO-published posts now carry full SEO and social metadata. When a supported SEO plugin (Yoast, Rank Math, or SEOPress) is active, the generated meta title, description, Open Graph, Twitter, and canonical values are written into that plugin's own fields so they render through it and stay editable. When no SEO plugin is active, the plugin outputs the meta and social tags itself, including the document title.
-* Added BlogPosting structured data (JSON-LD), built from the published post so its URL, dates, author, and image match the live page.
-* YouTube and other video embeds are now preserved in article content instead of being stripped.
-* Inline article images are now imported into the WordPress media library instead of hotlinking to external URLs. Re-publishing an article reuses the existing media instead of creating duplicates.
-* Featured image import now handles URLs without a file extension and assigns the image to the post author.
-* Restricted the post-deletion endpoint to posts originally created by SnowSEO.
-* Bumped `Tested up to` to WordPress 7.0.
-
-= 1.1.0 =
-* Renamed plugin slug from `snowseo-wordpress-plugin` to `snowseo` to comply with WordPress.org plugin directory naming guidelines.
-* Added `readme.txt` with full external-service disclosure (data sent to and received from SnowSEO API).
-* Updated `Tested up to` to WordPress 6.7.
-* Removed in-plugin update checker. Plugin updates are now delivered exclusively through WordPress.org's standard update mechanism (per WordPress.org plugin guideline #8).
-* Added safety net to deactivate the legacy `snowseo-wordpress-plugin` folder if both versions are present on a site.
-* Internal: renamed PHP constants (`SNOWSEO_VERSION`, `SNOWSEO_PLUGIN_DIR`, `SNOWSEO_PLUGIN_URL`, `SNOWSEO_PLUGIN_FILE`) and helper function prefixes from `snowseo_wordpress_plugin_*` to `snowseo_*`. Stored option keys for credentials (`snowseo_api_key`, `snowseo_connection`, `snowseo_activity_logs`) are unchanged, so existing connections survive the upgrade.
-
-= 1.0.2 =
-* Hardening and minor UI fixes.
-
-= 1.0.1 =
-* Minor fixes.
-
-= 1.0.0 =
-* Initial release.
-
-== Upgrade Notice ==
-
-= 1.3.1 =
-Security fix: disconnecting this site now requires your site token instead of a team ID alone. Update as soon as you can. Your existing connection and settings are preserved.
-
-= 1.2.0 =
-Adds front-end SEO output (meta tags, Open Graph, Twitter Cards, and JSON-LD), preserves video embeds, and imports article images into your media library. Your existing connection and settings are preserved.
-
-= 1.1.0 =
-The plugin folder was renamed from `snowseo-wordpress-plugin` to `snowseo`. Your connection and logs are preserved. If both versions appear on the Plugins screen after updating, deactivate and delete the older `snowseo-wordpress-plugin` entry.
+Earlier release history is available in the tagged source repository at https://github.com/Snow-SEO/snowseo-wordpress-plugin/tags.

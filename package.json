@@ -1,6 +1,6 @@
 {
   "name": "@snowseo/wordpress-plugin",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "SnowSEO WordPress Plugin",
   "private": true,
   "scripts": {

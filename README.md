@@ -59,9 +59,11 @@ npm run plugin-zip
 
 ## What the plugin talks to
 
-The plugin communicates only with the SnowSEO API at `https://api.snowseo.com/v3`, and
-only about site-level metadata (site URL, site title, WordPress version) plus your site
-token. No visitor data is sent. The full inbound and outbound data disclosure is in
+The plugin communicates only with the SnowSEO API at `https://api.snowseo.com/v3`.
+Connection metadata, publishing requests, post status information, and the content and
+SEO metadata of a post selected for an audit autofix can be exchanged using the site
+token. The plugin does not send visitor analytics, IP addresses, cookies, or WordPress
+user account data. The complete inbound and outbound data disclosure is in
 [readme.txt](readme.txt) under "External service: SnowSEO".
 
 ## Reporting a security issue
