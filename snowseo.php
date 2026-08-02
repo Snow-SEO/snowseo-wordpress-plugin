@@ -4,7 +4,7 @@
  * Plugin Name:       SnowSEO
  * Plugin URI:        https://github.com/Snow-SEO/snowseo-wordpress-plugin
  * Description:       Connect WordPress to SnowSEO for AI-assisted content publishing, scheduling, and analytics.
- * Version:           1.3.3
+ * Version:           1.3.4
  * Requires at least: 5.6
  * Tested up to:      7.0
  * Requires PHP:      7.4
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 /**
  * Plugin constants.
  */
-define('SNOWSEO_VERSION', '1.3.3');
+define('SNOWSEO_VERSION', '1.3.4');
 define('SNOWSEO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SNOWSEO_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SNOWSEO_PLUGIN_FILE', __FILE__);
@@ -132,7 +132,7 @@ function snowseo_admin_menu()
 		'snowseo',
 		'snowseo_render_admin_page',
 		snowseo_icon(),
-		25
+		81
 	);
 }
 add_action('admin_menu', 'snowseo_admin_menu');
@@ -216,34 +216,6 @@ function snowseo_admin_body_class($classes)
 	return $classes;
 }
 add_filter('admin_body_class', 'snowseo_admin_body_class');
-
-/**
- * Inject custom admin CSS to give our page full width.
- */
-function snowseo_admin_head()
-{
-	$screen = get_current_screen();
-	if (! $screen || 'toplevel_page_snowseo' !== $screen->id) {
-		return;
-	}
-?>
-	<style>
-		/* Give the React app full control of the content area */
-		.snowseo-admin-page #wpcontent {
-			padding-left: 0;
-		}
-
-		.snowseo-admin-page #wpbody-content {
-			padding-bottom: 0;
-		}
-
-		.snowseo-admin-page #wpfooter {
-			display: none;
-		}
-	</style>
-<?php
-}
-add_action('admin_head', 'snowseo_admin_head');
 
 /**
  * Whether a dedicated SEO plugin is managing document head output. When one is

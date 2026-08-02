@@ -3,7 +3,7 @@ Contributors: kapybara
 Tags: seo, ai, content, publishing, ai-content
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 1.3.3
+Stable tag: 1.3.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,7 +26,7 @@ The plugin itself does not generate content. All article generation, editing, an
 
 = Source code =
 
-The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.3`.
+The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.4`.
 
 = External service: SnowSEO =
 
@@ -100,6 +100,9 @@ When SnowSEO sends a post with status `scheduled` and a future date, the plugin 
 When SnowSEO publishes a post via server-to-server call (authenticated with the site token rather than a WordPress login), the post is assigned to the first administrator on the site. If you want a specific user as the author of incoming posts, ensure that user is an administrator and has the lowest user ID among administrators.
 
 == Changelog ==
+
+= 1.3.4 =
+* Enqueued the admin layout styling through the compiled plugin stylesheet and moved the dashboard menu below core items following WordPress.org review feedback.
 
 = 1.3.3 =
 * Expanded the external-service disclosure to cover authenticated post status checks, website audit autofixes, deletion of SnowSEO-created posts, health checks, and site-token invalidation. No runtime behavior changed.
