@@ -3,7 +3,7 @@ Contributors: kapybara
 Tags: seo, ai, content, publishing, ai-content
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 1.3.4
+Stable tag: 1.3.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -100,6 +100,9 @@ When SnowSEO sends a post with status `scheduled` and a future date, the plugin 
 When SnowSEO publishes a post via server-to-server call (authenticated with the site token rather than a WordPress login), the post is assigned to the first administrator on the site. If you want a specific user as the author of incoming posts, ensure that user is an administrator and has the lowest user ID among administrators.
 
 == Changelog ==
+
+= 1.3.5 =
+* Posts pushed from SnowSEO now carry their categories and tags. Terms that don't exist on this site yet are created automatically. Previously these were sent but ignored, so posts landed uncategorised.
 
 = 1.3.4 =
 * Enqueued the admin layout styling through the compiled plugin stylesheet and moved the dashboard menu below core items following WordPress.org review feedback.

@@ -4,7 +4,7 @@
  * Plugin Name:       SnowSEO
  * Plugin URI:        https://github.com/Snow-SEO/snowseo-wordpress-plugin
  * Description:       Connect WordPress to SnowSEO for AI-assisted content publishing, scheduling, and analytics.
- * Version:           1.3.4
+ * Version:           1.3.5
  * Requires at least: 5.6
  * Tested up to:      7.0
  * Requires PHP:      7.4
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 /**
  * Plugin constants.
  */
-define('SNOWSEO_VERSION', '1.3.4');
+define('SNOWSEO_VERSION', '1.3.5');
 define('SNOWSEO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SNOWSEO_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SNOWSEO_PLUGIN_FILE', __FILE__);
@@ -408,7 +408,7 @@ function snowseo_output_jsonld()
 		),
 		'publisher'        => array(
 			'@type' => 'Organization',
-			'name'  => get_bloginfo('name'),
+			'name'  => html_entity_decode(get_bloginfo('name'), ENT_QUOTES, 'UTF-8'),
 		),
 	);
 

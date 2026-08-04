@@ -223,6 +223,8 @@ class SnowSEO_Rest_API
 				'featured_image_url'     => array('default' => '', 'type' => 'string', 'sanitize_callback' => 'esc_url_raw'),
 				'featured_image_caption' => array('default' => '', 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'),
 				'meta'                   => array('default' => array(), 'type' => 'object'),
+				'categories'             => array('default' => array(), 'type' => 'array', 'items' => array('type' => 'string')),
+				'tags'                   => array('default' => array(), 'type' => 'array', 'items' => array('type' => 'string')),
 			),
 		));
 
@@ -843,6 +845,62 @@ class SnowSEO_Rest_API
 	}
 
 	/**
+	 * Resolve taxonomy term NAMES coming from SnowSEO into local term IDs,
+	 * creating any that don't exist yet (same behaviour as the direct
+	 * Application Password publish path, which creates missing terms over REST).
+	 *
+	 * Uses wp_insert_term() for the lookup rather than get_term_by('name', ...):
+	 * core stores term names HTML-escaped and expects an already-escaped value
+	 * for name lookups, so matching by hand is fragile. wp_insert_term() does the
+	 * normalisation itself and hands back the existing id via the `term_exists`
+	 * error when the term is already there.
+	 *
+	 * @param array  $names    Term names.
+	 * @param string $taxonomy 'category' or 'post_tag'.
+	 * @return int[] Unique term IDs.
+	 */
+	private function resolve_term_ids($names, $taxonomy)
+	{
+		$ids = array();
+		if (! is_array($names)) {
+			return $ids;
+		}
+
+		// Bound the work: a publish payload should never carry more than a
+		// handful of terms, and each miss costs an INSERT.
+		$max_terms = 20;
+		$seen      = 0;
+
+		foreach ($names as $raw_name) {
+			if ($seen >= $max_terms) {
+				break;
+			}
+			if (! is_string($raw_name)) {
+				continue;
+			}
+			$name = sanitize_text_field(wp_strip_all_tags($raw_name));
+			if ('' === $name) {
+				continue;
+			}
+			$seen++;
+
+			$term = wp_insert_term($name, $taxonomy);
+			if (is_wp_error($term)) {
+				$existing = $term->get_error_data();
+				if ('term_exists' === $term->get_error_code() && is_numeric($existing)) {
+					$ids[] = (int) $existing;
+				}
+				continue;
+			}
+			if (isset($term['term_id'])) {
+				$ids[] = (int) $term['term_id'];
+			}
+		}
+
+		return array_values(array_unique($ids));
+	}
+
+	/**
 	 * Handle POST /receive-publish request.
 	 * Receives article content from SnowSEO server and publishes it locally.
 	 * Authenticated via X-Plugin-Key header (not WordPress nonce).
@@ -860,6 +918,8 @@ class SnowSEO_Rest_API
 		$seo_score              = $request->get_param('seoScore');
 		$article_id             = $request->get_param('articleId');
 		$meta                   = $request->get_param('meta');
+		$categories             = $request->get_param('categories');
+		$tags                   = $request->get_param('tags');
 
 		if (empty($title) || empty($content)) {
 			return new WP_REST_Response(array(
@@ -965,6 +1025,23 @@ class SnowSEO_Rest_API
 				'success' => false,
 				'error'   => $post_id->get_error_message(),
 			), 500);
+		}
+
+		// Apply categories / tags. Only touched when SnowSEO actually sent terms —
+		// an empty payload must not strip the terms an editor set locally, and on
+		// republish a non-empty payload REPLACES (not appends) so terms removed in
+		// SnowSEO are removed here too.
+		if (! empty($categories)) {
+			$category_ids = $this->resolve_term_ids($categories, 'category');
+			if (! empty($category_ids)) {
+				wp_set_post_terms($post_id, $category_ids, 'category', false);
+			}
+		}
+		if (! empty($tags)) {
+			$tag_ids = $this->resolve_term_ids($tags, 'post_tag');
+			if (! empty($tag_ids)) {
+				wp_set_post_terms($post_id, $tag_ids, 'post_tag', false);
+			}
 		}
 
 		if (! empty($featured_image)) {
