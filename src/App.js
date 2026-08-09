@@ -3,6 +3,7 @@ import Settings from './pages/Settings';
 import Dashboard from './pages/Dashboard';
 import SettingsConnected from './pages/SettingsConnected';
 import Articles from './pages/Articles';
+import Performance from './pages/Performance';
 // import Logs from './pages/Logs'; // Logs tab commented out for now
 import Help from './pages/Help';
 import { disconnectSite, getStatus } from './api';
@@ -40,6 +41,8 @@ function PageContent({ route }) {
             return <ComingSoon title="Automation Rules" />;
         case 'analytics':
             return <ComingSoon title="Analytics" />;
+        case 'performance':
+            return <Performance />;
         case 'settings':
             return <SettingsConnected />;
         // case 'logs':

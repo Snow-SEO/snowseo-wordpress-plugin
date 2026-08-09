@@ -3,7 +3,7 @@ Contributors: kapybara
 Tags: seo, ai, content, publishing, ai-content
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 1.3.5
+Stable tag: 1.3.6
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,7 +26,7 @@ The plugin itself does not generate content. All article generation, editing, an
 
 = Source code =
 
-The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.4`.
+The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.6`.
 
 = External service: SnowSEO =
 
@@ -50,6 +50,8 @@ This plugin **requires** an account at SnowSEO (https://snowseo.com) and communi
 * On a user-requested website audit autofix (`/wp-json/snowseo/v1/posts/{id}/update`, authenticated with your site token) - an updated title, HTML content, or supported SEO metadata is written to the post or page selected for the fix.
 * On a user-requested unpublish or delete action (`/wp-json/snowseo/v1/posts/{id}`, authenticated with your site token) - the requested post ID is sent to WordPress. The plugin permanently deletes the post only if it was originally created by SnowSEO.
 * On site-token rotation (`/wp-json/snowseo/v1/invalidate`, authenticated with the previous site token) - SnowSEO can instruct the plugin to remove its stored site token and connection metadata. An optional SnowSEO team ID may be sent as a secondary connection check.
+* On a user-requested PageSpeed fix (`/wp-json/snowseo/v1/perf/apply` and `/perf/revert`, authenticated with your site token) - SnowSEO sends only an identifier naming one fix from a fixed list. No file content is ever sent or accepted: everything written is fixed text built into this plugin. These endpoints do nothing at all unless an administrator has first enabled *Allow SnowSEO to apply performance fixes* under *SnowSEO > Performance* or *Settings > Reading*. Applying "text compression" adds a marker-delimited compression block to this site's `.htaccess`; applying "robots.txt" turns on a filter that removes invalid lines from the robots.txt WordPress generates. Both are reversible from the same screen, and both are removed when the plugin is uninstalled.
+* On a capability check (`/wp-json/snowseo/v1/perf`, authenticated with your site token) - the site returns its web server type, whether `.htaccess` is writable, whether a robots.txt file exists on disk, and which caching or optimisation plugins are active. No site content or credentials are returned.
 * Plugin updates are delivered through WordPress.org only; this plugin does not download updates from SnowSEO or any other external server.
 
 The plugin does not send visitor analytics, IP addresses, cookies, or WordPress user account data to SnowSEO. A post or page selected for an audit autofix is sent with its full content and may therefore contain personal information that the site owner included in that content.
@@ -100,6 +102,23 @@ When SnowSEO sends a post with status `scheduled` and a future date, the plugin 
 When SnowSEO publishes a post via server-to-server call (authenticated with the site token rather than a WordPress login), the post is assigned to the first administrator on the site. If you want a specific user as the author of incoming posts, ensure that user is an administrator and has the lowest user ID among administrators.
 
 == Changelog ==
+
+= 1.3.6 =
+* Image alt text can now be fixed on images that are not part of a post's content - featured images, and images placed by your theme or page builder. WordPress reads the alt text for those from the media library, so SnowSEO now writes it there instead of editing the post body.
+* Only the alt text of the matched attachment is changed. The image file, its title, caption and description are left untouched.
+* Added PageSpeed fixes SnowSEO can apply for you, under SnowSEO > Page Speed. Off by default: SnowSEO cannot change anything on your site until an administrator allows it on that screen, and it can only apply fixes from a fixed list built into this plugin - it can never send its own file contents or server directives.
+* That screen is a permission screen rather than a control panel. Fixes are applied from your SnowSEO dashboard, where you are already looking at the report that asked for them; this screen decides what SnowSEO is allowed to change, and shows what it has changed.
+* Text compression (gzip / brotli) can be switched on with one click on Apache and LiteSpeed. The block is written to your site's `.htaccess` between clearly marked comments, and can be removed from the same screen, by hand, or by uninstalling the plugin.
+* If another caching or optimisation plugin already manages compression, SnowSEO says so and points you at that plugin's setting instead of fighting it. On nginx and IIS it tells you the change has to be made in your server config, and shows the exact directive.
+* Added browser cache lifetimes. Images, fonts and media are cached for a year; stylesheets and scripts for thirty days, deliberately not longer, so a theme that does not version its files can never serve a stale stylesheet for a year.
+* Added a font-display fix, so your text stays visible in a fallback font while web fonts download instead of leaving a blank space.
+* Added early connections to the font and script hosts your site already uses. The list of hosts is built into this plugin and matched against what your site actually loads - SnowSEO cannot supply an address for your visitors' browsers to connect to.
+* Added an optional faster-first-paint optimizer that stops scripts and icon fonts blocking the moment your page appears. It never touches jQuery, anything with inline code attached, or your theme's main stylesheet. Before it stays on, the plugin loads your own pages from the outside and compares them; if anything is missing or broken, it puts the change back immediately.
+* Four ways to switch that optimizer off, including a `snowseo-perf-off` file in wp-content that works when you cannot reach wp-admin at all. If a fatal error ever happens while it is running, the plugin notices on the same request and serves the next one unoptimized.
+* robots.txt repair removes lines that search engines cannot parse from the robots.txt WordPress generates. It never changes what your site allows or blocks, and it stands down entirely if a robots.txt file exists on disk, showing you the corrected text to paste instead.
+* The Page Speed screen checks what your site actually serves rather than guessing, so it can tell you when `/robots.txt` is being blocked by a firewall or when compression is already handled upstream.
+* Every fix also has a checkbox under Settings > Reading, so nothing here depends on the SnowSEO dashboard being reachable.
+* Added a Manage link to the plugin's row on the Plugins screen.
 
 = 1.3.5 =
 * Posts pushed from SnowSEO now carry their categories and tags. Terms that don't exist on this site yet are created automatically. Previously these were sent but ignored, so posts landed uncategorised.

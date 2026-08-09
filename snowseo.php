@@ -4,7 +4,7 @@
  * Plugin Name:       SnowSEO
  * Plugin URI:        https://github.com/Snow-SEO/snowseo-wordpress-plugin
  * Description:       Connect WordPress to SnowSEO for AI-assisted content publishing, scheduling, and analytics.
- * Version:           1.3.5
+ * Version:           1.3.6
  * Requires at least: 5.6
  * Tested up to:      7.0
  * Requires PHP:      7.4
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 /**
  * Plugin constants.
  */
-define('SNOWSEO_VERSION', '1.3.5');
+define('SNOWSEO_VERSION', '1.3.6');
 define('SNOWSEO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SNOWSEO_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SNOWSEO_PLUGIN_FILE', __FILE__);
@@ -45,7 +45,58 @@ if (! defined('SNOWSEO_API_URL')) {
 /**
  * Include required files.
  */
+require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-fs.php';
 require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-rest-api.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-htaccess.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-assets.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-guard.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-render.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-robots.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf.php';
+
+/**
+ * Full-page caches and optimisation plugins active on this site, by display name.
+ *
+ * Matters for the performance fixes: when another plugin already manages
+ * compression or asset loading, the right answer is to say so and point at that
+ * plugin's setting rather than write a competing directive into `.htaccess`.
+ *
+ * The `WP_CACHE` / `advanced-cache.php` catch-all is what keeps this honest: a
+ * fixed list of known plugins would silently miss every host-specific drop-in.
+ *
+ * @return string[]
+ */
+function snowseo_page_caches_active()
+{
+	$found = array();
+
+	if (defined('WP_ROCKET_VERSION'))                  $found[] = 'WP Rocket';
+	if (defined('LSCWP_V'))                            $found[] = 'LiteSpeed Cache';
+	if (defined('W3TC'))                               $found[] = 'W3 Total Cache';
+	if (defined('WPCACHEHOME'))                        $found[] = 'WP Super Cache';
+	if (defined('WPO_VERSION'))                        $found[] = 'WP-Optimize';
+	if (defined('CACHE_ENABLER_VERSION'))              $found[] = 'Cache Enabler';
+	if (defined('SWCFPC_PLUGIN_VERSION'))              $found[] = 'Super Page Cache';
+	if (defined('SG_CACHEPRESS_VERSION'))              $found[] = 'SiteGround Optimizer';
+	if (class_exists('WpeCommon'))                     $found[] = 'WP Engine';
+	if (defined('KINSTAMU_VERSION'))                   $found[] = 'Kinsta';
+	if (defined('WPCOMSH_VERSION'))                    $found[] = 'WordPress.com';
+	if (! empty($_SERVER['HTTP_CF_RAY']))              $found[] = 'Cloudflare';
+
+	if ((defined('WP_CACHE') && WP_CACHE)
+		|| file_exists(WP_CONTENT_DIR . '/advanced-cache.php')) {
+		$found[] = 'page cache drop-in';
+	}
+
+	return array_values(array_unique($found));
+}
+
+/**
+ * Site-level PageSpeed fixes. The remote channel stays inert until a local
+ * administrator opts in, so registering the routes here is safe: they refuse
+ * with a 403 until then.
+ */
+SnowSEO_Perf::init();
 
 /**
  * Initialize REST API routes.
@@ -136,6 +187,24 @@ function snowseo_admin_menu()
 	);
 }
 add_action('admin_menu', 'snowseo_admin_menu');
+
+/**
+ * Add a "Manage" shortcut to the plugin's row on the Plugins screen. It points at
+ * the same admin page as the sidebar item, matching how other plugins surface a
+ * "Settings" link there.
+ */
+function snowseo_plugin_action_links($links)
+{
+	$manage = sprintf(
+		'<a href="%s">%s</a>',
+		esc_url(admin_url('admin.php?page=snowseo')),
+		esc_html__('Manage', 'snowseo')
+	);
+	array_unshift($links, $manage);
+
+	return $links;
+}
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'snowseo_plugin_action_links');
 
 
 /**

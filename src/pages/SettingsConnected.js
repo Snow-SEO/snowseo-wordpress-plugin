@@ -1,5 +1,6 @@
 import { useState, useEffect } from '@wordpress/element';
 import { getSettings } from '../api';
+import Tabs from '../components/Tabs';
 
 const getAppUrl = () => {
     return 'https://snowseo.com/dashboard';
@@ -81,13 +82,7 @@ export default function SettingsConnected() {
             <h1 className="snowseo-page-title">Settings</h1>
 
             {/* Tab Navigation */}
-            <div className="snowseo-tabs">
-                <a href="#/dashboard" className="snowseo-tabs__item">Dashboard</a>
-                 {/* <a href="#/articles" className="snowseo-tabs__item">Articles</a> */}
-                <a href="#/settings" className="snowseo-tabs__item snowseo-tabs__item--active">Settings</a>
-                {/* <a href="#/logs" className="snowseo-tabs__item">Logs</a> */}
-                {/* <a href="#/help" className="snowseo-tabs__item">Help</a> */}
-            </div>
+            <Tabs current="settings" />
 
             {/* Blue Banner */}
             <div className="snowseo-banner">

@@ -44,8 +44,14 @@ async function apiFetch(endpoint, method = 'GET', body = null) {
 
     let response = await fetch(primaryUrl, options);
 
-    // Fallback to ?rest_route= if /wp-json/ is missing or returns 404/html
-    if (!response.ok || response.status === 404 || response.headers.get('content-type')?.includes('text/html')) {
+    // Fallback to ?rest_route= if /wp-json/ is missing or returns 404/html.
+    //
+    // Deliberately NOT `!response.ok`: that retried the fallback URL on ANY
+    // non-2xx, which silently replayed POSTs whose refusal was intentional (a
+    // 403 "not permitted", a 409 "already handled") and surfaced the second
+    // attempt's error instead of the first's. Matters now that a POST can write
+    // to .htaccess. Only a genuinely absent /wp-json/ route should fall back.
+    if (response.status === 404 || response.headers.get('content-type')?.includes('text/html')) {
         response = await fetch(fallbackUrl, options);
     }
 
@@ -131,4 +137,21 @@ export async function getSettings() {
  */
 export async function getLogStats() {
     return apiFetch('logs/stats');
+}
+
+/**
+ * Site-level performance fixes: the capability report and the consent toggle.
+ * Both return the same payload shape, so a caller can `.then(setSettings)`.
+ *
+ * There is deliberately no apply/revert here. Those routes exist for the
+ * SnowSEO dashboard, which is where the site owner is already looking at the
+ * PageSpeed report that motivates the change; this screen only grants
+ * permission.
+ */
+export async function getPerfSettings() {
+    return apiFetch('perf');
+}
+
+export async function updatePerfSettings(changes) {
+    return apiFetch('perf', 'POST', changes);
 }

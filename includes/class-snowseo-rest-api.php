@@ -272,6 +272,23 @@ class SnowSEO_Rest_API
 			),
 		));
 
+		// POST /media/alt - set alt text on media library attachments by URL.
+		// Needed because featured images, theme-rendered images and page-builder
+		// images are NOT in post_content: WordPress renders their alt from the
+		// attachment's _wp_attachment_image_alt meta, so rewriting the post body
+		// can never fix them.
+		register_rest_route($namespace, '/media/alt', array(
+			'methods'             => 'POST',
+			'callback'            => array($this, 'handle_update_media_alt'),
+			'permission_callback' => array($this, 'check_plugin_key_permission'),
+			'args'                => array(
+				'items' => array(
+					'required' => true,
+					'type'     => 'array',
+				),
+			),
+		));
+
 		// POST /posts/(?P<id>\d+)/update - update specific fields and metadata on a post
 		register_rest_route($namespace, '/posts/(?P<id>\d+)/update', array(
 			'methods'             => 'POST',
@@ -314,6 +331,19 @@ class SnowSEO_Rest_API
 	 * Used for server-to-server calls from the SnowSEO backend.
 	 */
 	public function check_plugin_key_permission($request)
+	{
+		return self::verify_plugin_key($request);
+	}
+
+	/**
+	 * Static form of the key check.
+	 *
+	 * Instantiating this class just to compare two strings costs a
+	 * wp_kses_allowed_html('post') build plus a 20-key array on every call, so
+	 * other classes (SnowSEO_Perf) use this instead. One implementation of the
+	 * comparison, two entry points.
+	 */
+	public static function verify_plugin_key($request)
 	{
 		$plugin_key = $request->get_header('X-Plugin-Key');
 		$stored_key = get_option(self::OPTION_API_KEY, '');
@@ -572,6 +602,93 @@ class SnowSEO_Rest_API
 	}
 
 	/**
+	 * Resolve a media URL to its attachment ID.
+	 *
+	 * attachment_url_to_postid() only matches the ORIGINAL upload, so a rendered
+	 * srcset/resized variant ("photo-1024x683.jpg") returns 0. Strip the
+	 * "-{width}x{height}" suffix and retry before giving up.
+	 */
+	private function snowseo_attachment_id_from_url($url)
+	{
+		$clean = strtok($url, '?');
+
+		$attachment_id = attachment_url_to_postid($clean);
+		if ($attachment_id) {
+			return (int) $attachment_id;
+		}
+
+		// Resized variant -> original file name.
+		$stripped = preg_replace('/-\d+x\d+(\.[a-zA-Z0-9]+)$/', '$1', $clean);
+		if ($stripped && $stripped !== $clean) {
+			$attachment_id = attachment_url_to_postid($stripped);
+			if ($attachment_id) {
+				return (int) $attachment_id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Handle POST /media/alt - set alt text on media library attachments by URL.
+	 *
+	 * Body: { items: [ { url, alt }, ... ] }
+	 * Always 200; each item reports its own success/failure so one unresolvable
+	 * URL never fails the whole batch.
+	 */
+	public function handle_update_media_alt($request)
+	{
+		$items = $request->get_param('items');
+		if (! is_array($items)) {
+			return new WP_Error('invalid_items', 'items must be an array', array('status' => 400));
+		}
+
+		$results = array();
+		$updated = 0;
+
+		foreach ($items as $item) {
+			$url = isset($item['url']) ? esc_url_raw($item['url']) : '';
+			$alt = isset($item['alt']) ? sanitize_text_field($item['alt']) : '';
+
+			if (empty($url) || $alt === '') {
+				$results[] = array(
+					'url'     => $url,
+					'success' => false,
+					'error'   => 'url and alt are required',
+				);
+				continue;
+			}
+
+			$attachment_id = $this->snowseo_attachment_id_from_url($url);
+			// Confirm the resolved id really is an attachment before writing meta
+			// to it, so a URL that resolves to anything else is refused instead of
+			// having alt text written onto an unrelated post.
+			if (! $attachment_id || 'attachment' !== get_post_type($attachment_id)) {
+				$results[] = array(
+					'url'     => $url,
+					'success' => false,
+					'error'   => 'No media library attachment found for this URL',
+				);
+				continue;
+			}
+
+			update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt);
+			$updated++;
+			$results[] = array(
+				'url'          => $url,
+				'success'      => true,
+				'attachmentId' => $attachment_id,
+			);
+		}
+
+		return new WP_REST_Response(array(
+			'success' => true,
+			'updated' => $updated,
+			'results' => $results,
+		), 200);
+	}
+
+	/**
 	 * Handle POST /posts/<id>/update request to update a post's content or metadata.
 	 */
 	public function handle_update_post($request)
@@ -593,6 +710,11 @@ class SnowSEO_Rest_API
 		$content = $request->get_param('content');
 		if ($content !== null) {
 			add_filter('wp_kses_allowed_html', array($this, 'allow_iframe_in_post_kses'), 10, 2);
+			$loss = $this->guard_content_loss($content);
+			if (is_wp_error($loss)) {
+				remove_filter('wp_kses_allowed_html', array($this, 'allow_iframe_in_post_kses'), 10);
+				return $loss;
+			}
 			$post_data['post_content'] = $this->strip_disallowed_iframes(wp_kses($content, $this->allowed_html));
 		}
 
@@ -1285,6 +1407,15 @@ class SnowSEO_Rest_API
 	 */
 	public function add_log_entry($status, $message, $details = array())
 	{
+		return self::log($status, $message, $details);
+	}
+
+	/**
+	 * Static form of add_log_entry, for classes that have no reason to build a
+	 * whole SnowSEO_Rest_API instance (see verify_plugin_key).
+	 */
+	public static function log($status, $message, $details = array())
+	{
 		$logs = get_option(self::OPTION_LOGS, array());
 
 		$entry = array(
@@ -1326,6 +1457,83 @@ class SnowSEO_Rest_API
 			return '';
 		}
 		return $this->strip_disallowed_iframes(wp_kses($raw, $this->allowed_html));
+	}
+
+	/**
+	 * Tags the sanitizer would delete from this content, if any.
+	 *
+	 * Every write runs the WHOLE post body through wp_kses, not just the part
+	 * SnowSEO changed. That is correct for safety and destructive for content:
+	 * an inline <svg>, a contact <form>, or a non-video <iframe> is simply gone
+	 * afterwards, and the owner finds out when a visitor tells them.
+	 *
+	 * The check compares tag counts before and after rather than guessing at
+	 * core's allowlist, because that list changes between WordPress versions and
+	 * a hardcoded copy of it would be wrong on exactly the sites it matters for.
+	 *
+	 * @param string $raw
+	 * @return string[] Distinct tag names that would be lost.
+	 */
+	private function tags_kses_would_remove($raw)
+	{
+		if (! is_string($raw) || '' === $raw) {
+			return array();
+		}
+		if (! preg_match_all('/<\s*([a-zA-Z][a-zA-Z0-9-]*)\b/', $raw, $matches)) {
+			return array();
+		}
+
+		$before = array_count_values(array_map('strtolower', $matches[1]));
+
+		// BOTH passes, because both really run. wp_update_post() puts the body
+		// through content_save_pre -> wp_filter_post_kses, whose allowlist is
+		// core's own and narrower than this plugin's - so measuring only the
+		// first pass would miss every tag core deletes on the way to the
+		// database, which is most of the ones worth warning about.
+		$clean = $this->strip_disallowed_iframes(wp_kses($raw, $this->allowed_html));
+		$clean = wp_kses($clean, 'post');
+		$after = array();
+		if (preg_match_all('/<\s*([a-zA-Z][a-zA-Z0-9-]*)\b/', $clean, $clean_matches)) {
+			$after = array_count_values(array_map('strtolower', $clean_matches[1]));
+		}
+
+		$lost = array();
+		foreach ($before as $tag => $count) {
+			$kept = isset($after[$tag]) ? (int) $after[$tag] : 0;
+			if ($kept < $count) {
+				$lost[] = $tag;
+			}
+		}
+
+		return $lost;
+	}
+
+	/**
+	 * Refuse a write that would destroy part of the post.
+	 *
+	 * Deliberately checks the content SnowSEO is about to store rather than what
+	 * is already on the site: if the two disagree the incoming version is the one
+	 * that gets saved, so it is the one that has to survive sanitizing.
+	 *
+	 * @param string $raw
+	 * @return WP_Error|null
+	 */
+	private function guard_content_loss($raw)
+	{
+		$lost = $this->tags_kses_would_remove($raw);
+		if (empty($lost)) {
+			return null;
+		}
+
+		return new WP_Error(
+			'snowseo_content_would_be_lost',
+			sprintf(
+				/* translators: %s: comma-separated list of HTML tag names. */
+				__('This page contains markup SnowSEO cannot save without removing it (%s). The change was not applied, so nothing on the page was altered. Edit this page by hand instead.', 'snowseo'),
+				'<' . implode('>, <', array_slice($lost, 0, 5)) . '>'
+			),
+			array('status' => 409)
+		);
 	}
 
 	/**
