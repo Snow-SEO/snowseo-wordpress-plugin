@@ -49,10 +49,12 @@ class SnowSEO_FS
 		}
 		$perms = @fileperms($path);
 		if (false !== $perms) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Carries the original file's mode onto the temp file so the rename below cannot change it. WP_Filesystem has no equivalent that keeps the swap atomic.
 			@chmod($temp, $perms & 0777);
 		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- rename(2) is the atomic swap this function exists for. WP_Filesystem::move() is not atomic on every transport, and a torn site-root .htaccess takes the whole site down.
 		if (! @rename($temp, $path)) {
-			@unlink($temp);
+			wp_delete_file($temp);
 			return false;
 		}
 		return true;

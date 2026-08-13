@@ -4,7 +4,7 @@
  * Plugin Name:       SnowSEO
  * Plugin URI:        https://github.com/Snow-SEO/snowseo-wordpress-plugin
  * Description:       Connect WordPress to SnowSEO for AI-assisted content publishing, scheduling, and analytics.
- * Version:           1.3.6
+ * Version:           1.3.7
  * Requires at least: 5.6
  * Tested up to:      7.0
  * Requires PHP:      7.4
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 /**
  * Plugin constants.
  */
-define('SNOWSEO_VERSION', '1.3.6');
+define('SNOWSEO_VERSION', '1.3.7');
 define('SNOWSEO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SNOWSEO_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SNOWSEO_PLUGIN_FILE', __FILE__);
@@ -45,14 +45,25 @@ if (! defined('SNOWSEO_API_URL')) {
 /**
  * Include required files.
  */
+// Shared infrastructure, used by both the REST routes and the performance fixes.
 require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-fs.php';
-require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-rest-api.php';
-require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-htaccess.php';
-require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-assets.php';
-require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-guard.php';
-require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-render.php';
-require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf-robots.php';
-require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-perf.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/class-snowseo-log.php';
+
+// REST API. All static except the controller itself, so order only matters for
+// readability - PHP resolves the static calls at call time, not at load.
+require_once SNOWSEO_PLUGIN_DIR . 'includes/rest/class-snowseo-rest-auth.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/rest/class-snowseo-media.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/rest/class-snowseo-rest-connection.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/rest/class-snowseo-rest-publish.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/rest/class-snowseo-rest-api.php';
+
+// Performance fixes (opt-in, see class-snowseo-perf).
+require_once SNOWSEO_PLUGIN_DIR . 'includes/perf/class-snowseo-perf-htaccess.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/perf/class-snowseo-perf-assets.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/perf/class-snowseo-perf-guard.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/perf/class-snowseo-perf-render.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/perf/class-snowseo-perf-robots.php';
+require_once SNOWSEO_PLUGIN_DIR . 'includes/perf/class-snowseo-perf.php';
 
 /**
  * Full-page caches and optimisation plugins active on this site, by display name.
@@ -253,7 +264,7 @@ function snowseo_enqueue_admin_assets($hook_suffix)
 			'siteUrl' => home_url(),
 			'nonce'   => wp_create_nonce('wp_rest'),
 			'adminUrl' => admin_url(),
-			'connected' => (new SnowSEO_Rest_API())->is_connected(),
+			'connected' => SnowSEO_Rest_Connection::is_connected(),
 		)
 	);
 }

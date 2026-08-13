@@ -426,6 +426,7 @@ class SnowSEO_Perf_Guard
 			$cleared[] = 'WP Rocket';
 		}
 		if (has_action('litespeed_purge_all')) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache's own action, not ours to prefix.
 			do_action('litespeed_purge_all');
 			$cleared[] = 'LiteSpeed Cache';
 		}

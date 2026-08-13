@@ -1,6 +1,6 @@
 {
   "name": "@snowseo/wordpress-plugin",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "SnowSEO WordPress Plugin",
   "private": true,
   "scripts": {
@@ -10,6 +10,7 @@
     "plugin-zip": "pnpm build && rm -rf snowseo snowseo.zip && mkdir snowseo && cp snowseo.php readme.txt uninstall.php LICENSE.txt snowseo/ && cp -R build includes snowseo/ && zip -r snowseo.zip snowseo && rm -rf snowseo && unzip -l snowseo.zip",
     "plugin-zip:py": "pnpm build && python3 zip-plugin.py",
     "wp-env": "wp-env",
+    "wp:verify": "node tests/run-verify.mjs",
     "wp:start": "wp-env start",
     "wp:stop": "wp-env stop",
     "wp:destroy": "wp-env destroy",

@@ -3,7 +3,7 @@ Contributors: kapybara
 Tags: seo, ai, content, publishing, ai-content
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 1.3.6
+Stable tag: 1.3.7
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,7 +26,7 @@ The plugin itself does not generate content. All article generation, editing, an
 
 = Source code =
 
-The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.6`.
+The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.7`.
 
 = External service: SnowSEO =
 
@@ -102,6 +102,10 @@ When SnowSEO sends a post with status `scheduled` and a future date, the plugin 
 When SnowSEO publishes a post via server-to-server call (authenticated with the site token rather than a WordPress login), the post is assigned to the first administrator on the site. If you want a specific user as the author of incoming posts, ensure that user is an administrator and has the lowest user ID among administrators.
 
 == Changelog ==
+
+= 1.3.7 =
+* Canonical URLs sent from SnowSEO are now checked as web addresses before they are saved. Anything that is not a plain http or https address is discarded instead of being stored on the post or handed to Yoast, Rank Math or SEOPress.
+* Housekeeping pass over the rest of the plugin: file operations now go through WordPress's own helpers, and the web server name read from the environment is cleaned before it is used. Nothing the plugin does has changed.
 
 = 1.3.6 =
 * Image alt text can now be fixed on images that are not part of a post's content - featured images, and images placed by your theme or page builder. WordPress reads the alt text for those from the media library, so SnowSEO now writes it there instead of editing the post body.

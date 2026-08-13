@@ -1,7 +1,7 @@
 {
   "plugins": ["."],
   "config": {
-    "SNOWSEO_API_URL": "https://api.snowseo.com/v3"
+    "SNOWSEO_API_URL": "https://dev-api.snowseo.com/v3"
   },
   "port": 8888
 }

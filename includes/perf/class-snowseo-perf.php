@@ -134,24 +134,19 @@ class SnowSEO_Perf
 
 	// ─── Permissions ──────────────────────────────────────────────────────────
 
-	public static function check_admin_permission()
-	{
-		return current_user_can('manage_options');
-	}
-
-	/** One implementation of the key comparison, not two. */
-	public static function check_plugin_key($request)
-	{
-		return SnowSEO_Rest_API::verify_plugin_key($request);
-	}
-
 	/**
 	 * Capability data is site fingerprinting - not a secret, but not public.
 	 * Both channels need it: the API to decide, the React page to render.
+	 *
+	 * Both underlying checks live in SnowSEO_Rest_Auth. Same reasoning as the key
+	 * comparison already had: one implementation, not two. A second copy of
+	 * "which capability counts as admin here" is the kind of thing that drifts
+	 * silently and only shows up as a permissions bug.
 	 */
 	public static function check_read_permission($request)
 	{
-		return self::check_admin_permission() || self::check_plugin_key($request);
+		return SnowSEO_Rest_Auth::check_admin_permission()
+			|| SnowSEO_Rest_Auth::check_plugin_key_permission($request);
 	}
 
 	/**
@@ -166,10 +161,10 @@ class SnowSEO_Perf
 	 */
 	public static function check_write_permission($request)
 	{
-		if (self::check_admin_permission()) {
+		if (SnowSEO_Rest_Auth::check_admin_permission()) {
 			return true;
 		}
-		if (! self::check_plugin_key($request)) {
+		if (! SnowSEO_Rest_Auth::check_plugin_key_permission($request)) {
 			return false;
 		}
 		if (! self::remote_allowed()) {
@@ -207,7 +202,7 @@ class SnowSEO_Perf
 				// Consent is set locally only. Deliberately NOT the write callback.
 				'methods'             => 'POST',
 				'callback'            => array(__CLASS__, 'handle_update_settings'),
-				'permission_callback' => array(__CLASS__, 'check_admin_permission'),
+				'permission_callback' => array('SnowSEO_Rest_Auth', 'check_admin_permission'),
 				'args'                => array(
 					'remoteEnabled' => array('type' => 'boolean'),
 					'robotsRepair'  => array('type' => 'boolean'),
@@ -300,7 +295,7 @@ class SnowSEO_Perf
 			return new WP_Error('perf_busy', __('Another performance change is already in progress. Try again shortly.', 'snowseo'), array('status' => 409));
 		}
 
-		$actor = self::check_admin_permission() ? 'admin' : 'remote';
+		$actor = SnowSEO_Rest_Auth::check_admin_permission() ? 'admin' : 'remote';
 		try {
 			$result = ('apply' === $action)
 				? self::apply_fix($fix, $actor)
@@ -546,11 +541,11 @@ class SnowSEO_Perf
 			return false;
 		}
 		if (file_exists($path)) {
-			return is_writable($path);
+			return wp_is_writable($path);
 		}
 		$home = SnowSEO_FS::home_path();
 
-		return '' !== $home && is_writable($home);
+		return '' !== $home && wp_is_writable($home);
 	}
 
 	/**
@@ -886,7 +881,7 @@ class SnowSEO_Perf
 		);
 		update_option(self::OPTION_STATE, $state, false);
 
-		SnowSEO_Rest_API::log(
+		SnowSEO_Log::write(
 			'success',
 			sprintf(
 				'Performance fix %s %s by %s',

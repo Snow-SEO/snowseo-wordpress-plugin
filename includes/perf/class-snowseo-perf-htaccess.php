@@ -78,7 +78,7 @@ class SnowSEO_Perf_Htaccess
 	public static function server_label()
 	{
 		$software = isset($_SERVER['SERVER_SOFTWARE'])
-			? strtolower((string) $_SERVER['SERVER_SOFTWARE'])
+			? strtolower(sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])))
 			: '';
 
 		// LiteSpeed must be tested before Apache: LSWS and OpenLiteSpeed both
@@ -391,10 +391,10 @@ class SnowSEO_Perf_Htaccess
 		}
 
 		$exists = file_exists($path);
-		if ($exists && ! is_writable($path)) {
+		if ($exists && ! wp_is_writable($path)) {
 			return new WP_Error('htaccess_unwritable', __('.htaccess is not writable. Add the block by hand instead.', 'snowseo'));
 		}
-		if (! $exists && ! is_writable($home)) {
+		if (! $exists && ! wp_is_writable($home)) {
 			return new WP_Error('htaccess_dir_unwritable', __('The site root is not writable, so .htaccess cannot be created.', 'snowseo'));
 		}
 
@@ -445,6 +445,7 @@ class SnowSEO_Perf_Htaccess
 				// a self-signed or mismatched cert on the site's own hostname must
 				// not make this probe fail, and a site owner can still force
 				// verification on.
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core's own filter, not ours to prefix.
 				'sslverify'   => apply_filters('https_local_ssl_verify', false),
 				'headers'     => array('Cache-Control' => 'no-cache'),
 			)
@@ -532,7 +533,7 @@ class SnowSEO_Perf_Htaccess
 		if (false === strpos($contents, self::marker_begin($block))) {
 			return true;
 		}
-		if (! is_writable($path)) {
+		if (! wp_is_writable($path)) {
 			return new WP_Error('htaccess_unwritable', __('.htaccess is not writable. Delete the SnowSEO block by hand instead.', 'snowseo'));
 		}
 

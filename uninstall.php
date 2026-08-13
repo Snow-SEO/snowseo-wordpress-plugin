@@ -57,7 +57,7 @@ if ( function_exists( 'get_home_path' ) ) {
 		$snowseo_htaccess = $snowseo_home . '.htaccess';
 	}
 }
-if ( file_exists( $snowseo_htaccess ) && is_writable( $snowseo_htaccess ) ) {
+if ( file_exists( $snowseo_htaccess ) && wp_is_writable( $snowseo_htaccess ) ) {
 	$snowseo_ht_contents = file_get_contents( $snowseo_htaccess );
 	$snowseo_ht_markers  = array( 'SnowSEO Performance', 'SnowSEO Cache Headers' );
 	$snowseo_ht_changed  = false;
@@ -90,10 +90,12 @@ if ( file_exists( $snowseo_htaccess ) && is_writable( $snowseo_htaccess ) ) {
 		if ( false !== file_put_contents( $snowseo_ht_tmp, $snowseo_ht_contents, LOCK_EX ) ) {
 			$snowseo_ht_perms = @fileperms( $snowseo_htaccess );
 			if ( false !== $snowseo_ht_perms ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Carries the original file's mode onto the temp file so the rename below cannot change it. WP_Filesystem has no equivalent that keeps the swap atomic.
 				@chmod( $snowseo_ht_tmp, $snowseo_ht_perms & 0777 );
 			}
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- rename(2) is the atomic swap described above. WP_Filesystem::move() is not atomic on every transport, and this runs with the plugin already gone, so a torn .htaccess could not be repaired.
 			if ( ! @rename( $snowseo_ht_tmp, $snowseo_htaccess ) ) {
-				@unlink( $snowseo_ht_tmp );
+				wp_delete_file( $snowseo_ht_tmp );
 			}
 		}
 	}
