@@ -9,8 +9,10 @@
  * that WordPress accepted the routes and every callback is callable, that the
  * kses filter unhooks by callback identity, that a publish keeps a vetted
  * iframe while dropping an untrusted one, that media alt resolves a resized
- * variant back to its original, that connect stores what it should, and that a
- * hostile canonicalUrl never reaches post meta or the SEO-plugin mirror.
+ * variant back to its original, that connect stores what it should, that a
+ * hostile canonicalUrl never reaches post meta or the SEO-plugin mirror, and
+ * that the front-end CSS and JSON-LD are emitted by WordPress's own style and
+ * script tag builders rather than echoed into the head.
  *
  * Know its limits before trusting a green run:
  *  - No framework, so no isolation and no guaranteed teardown. A fatal midway
@@ -274,10 +276,71 @@ t('connect wrote an activity log entry', ! empty($logs) && 'connected' === ($log
 
 remove_filter('pre_http_request', $mock, 10);
 // Options are restored by the shutdown handler from the snapshots above.
-// The API key stays in place until teardown, which is what lets section 8
+// The API key stays in place until teardown, which is what lets section 9
 // dispatch authenticated requests through the real REST server below.
 
-echo "\n8. canonicalUrl is validated as a URL, not just sanitized as text\n";
+echo "\n8. front-end CSS and structured data are built by WordPress, not echoed\n";
+// Both used to be printed straight into wp_head as raw tags. The CSS now rides a
+// source-less style handle, and the JSON-LD goes through
+// wp_print_inline_script_tag(). This section has to run before section 9 defines
+// WPSEO_VERSION, since a live SEO plugin turns the JSON-LD off by design.
+SnowSEO_Perf_Assets::enqueue_sized_image_rule();
+$sized_handle = SnowSEO_Perf_Assets::SIZED_IMAGE_HANDLE;
+$sized_style  = isset(wp_styles()->registered[$sized_handle]) ? wp_styles()->registered[$sized_handle] : null;
+
+t('sized-image style handle is registered', null !== $sized_style);
+// A false src is the point: there is no stylesheet file, so nothing to request.
+t('registered without a source', $sized_style && false === $sized_style->src);
+t('style handle is enqueued', wp_style_is($sized_handle, 'enqueued'));
+$sized_inline = (array) wp_styles()->get_data($sized_handle, 'after');
+t(
+	'rule attached as inline style data',
+	in_array(':where(img[data-snowseo-sized]){height:auto}', $sized_inline, true),
+	wp_json_encode($sized_inline)
+);
+
+ob_start();
+wp_styles()->do_item($sized_handle);
+$sized_markup = trim(ob_get_clean());
+t('WP_Styles prints the rule itself', false !== strpos($sized_markup, 'height:auto'), $sized_markup);
+t('no stylesheet request is emitted', false === stripos($sized_markup, '<link'), $sized_markup);
+
+wp_dequeue_style($sized_handle);
+wp_deregister_style($sized_handle);
+
+$jsonld_post = wp_insert_post(array(
+	'post_title'   => 'SnowSEO verify.php JSON-LD fixture',
+	'post_status'  => 'publish',
+	'post_content' => 'fixture',
+));
+$GLOBALS['snowseo_fixtures']['posts'][] = $jsonld_post;
+update_post_meta($jsonld_post, '_snowseo_article_id', 'verify-fixture-article');
+
+// snowseo_output_jsonld() reads the main query, so stand one up around the
+// fixture and put the original back straight after.
+$jsonld_prev_query     = $GLOBALS['wp_query'];
+$jsonld_prev_the_query = $GLOBALS['wp_the_query'];
+$GLOBALS['wp_query']     = new WP_Query(array('p' => $jsonld_post, 'post_type' => 'post'));
+$GLOBALS['wp_the_query'] = $GLOBALS['wp_query'];
+
+ob_start();
+snowseo_output_jsonld();
+$jsonld = trim(ob_get_clean());
+
+$GLOBALS['wp_query']     = $jsonld_prev_query;
+$GLOBALS['wp_the_query'] = $jsonld_prev_the_query;
+
+t('json-ld printed for a SnowSEO post', 0 === strpos($jsonld, '<script'), $jsonld);
+t('carries the application/ld+json type', false !== strpos($jsonld, 'application/ld+json'), $jsonld);
+$jsonld_body = trim((string) preg_replace('#^<script[^>]*>|</script>$#', '', $jsonld));
+$jsonld_data = json_decode($jsonld_body, true);
+t(
+	'body is parseable BlogPosting JSON',
+	is_array($jsonld_data) && 'BlogPosting' === (isset($jsonld_data['@type']) ? $jsonld_data['@type'] : ''),
+	$jsonld_body
+);
+
+echo "\n9. canonicalUrl is validated as a URL, not just sanitized as text\n";
 // sanitize_text_field() leaves a javascript: or data: value intact, and this one
 // is rendered into <head> and mirrored into the Yoast / Rank Math / SEOPress
 // canonical meta. Dispatching through rest_get_server() rather than calling the
@@ -338,7 +401,7 @@ $send_canonical('javascript:alert(1)');
 $mirrored = (string) get_post_meta($canon_post, '_yoast_wpseo_canonical', true);
 t('javascript: never reaches the Yoast mirror', false === stripos($mirrored, 'javascript'), $mirrored);
 
-echo "\n9. atomic writer, after the move to wp_is_writable() / wp_delete_file()\n";
+echo "\n10. atomic writer, after the move to wp_is_writable() / wp_delete_file()\n";
 // Everything here stays inside get_temp_dir(). The .htaccess install/remove
 // round trip exercises the same writer but mutates the site root, so it is not
 // run from this file - drive it by hand on a disposable site if that path

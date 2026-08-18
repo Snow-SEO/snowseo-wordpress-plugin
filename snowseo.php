@@ -4,8 +4,8 @@
  * Plugin Name:       SnowSEO
  * Plugin URI:        https://github.com/Snow-SEO/snowseo-wordpress-plugin
  * Description:       Connect WordPress to SnowSEO for AI-assisted content publishing, scheduling, and analytics.
- * Version:           1.3.7
- * Requires at least: 5.6
+ * Version:           1.3.8
+ * Requires at least: 5.7
  * Tested up to:      7.0
  * Requires PHP:      7.4
  * Author:            SnowSEO
@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
 /**
  * Plugin constants.
  */
-define('SNOWSEO_VERSION', '1.3.7');
+define('SNOWSEO_VERSION', '1.3.8');
 define('SNOWSEO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SNOWSEO_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SNOWSEO_PLUGIN_FILE', __FILE__);
@@ -511,6 +511,14 @@ function snowseo_output_jsonld()
 		);
 	}
 
-	echo "\n<script type=\"application/ld+json\">" . wp_json_encode($node) . "</script>\n";
+	$json = wp_json_encode($node);
+	if (! is_string($json) || '' === $json) {
+		return;
+	}
+
+	// wp_print_inline_script_tag() rather than a raw echo, so the tag is built by
+	// WordPress and anything filtering script attributes on this site - a CSP
+	// nonce, for instance - applies to it too.
+	wp_print_inline_script_tag($json, array('type' => 'application/ld+json'));
 }
 add_action('wp_head', 'snowseo_output_jsonld', 2);

@@ -29,6 +29,9 @@ class SnowSEO_Perf_Assets
 	const OPTION_FONT_DISPLAY = 'snowseo_perf_font_display_enabled';
 	const OPTION_PRECONNECT   = 'snowseo_perf_preconnect_enabled';
 
+	/** Source-less style handle the sized-image rule is attached to. */
+	const SIZED_IMAGE_HANDLE = 'snowseo-sized-images';
+
 	/** Google's font CSS host, and the host it in turn pulls font files from. */
 	const GOOGLE_FONTS_CSS   = 'fonts.googleapis.com';
 	const GOOGLE_FONTS_FILES = 'fonts.gstatic.com';
@@ -72,7 +75,7 @@ class SnowSEO_Perf_Assets
 	{
 		add_filter('style_loader_src', array(__CLASS__, 'filter_style_src'), 10, 2);
 		add_filter('wp_resource_hints', array(__CLASS__, 'filter_resource_hints'), 10, 2);
-		add_action('wp_head', array(__CLASS__, 'print_sized_image_rule'), 1);
+		add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue_sized_image_rule'));
 	}
 
 	// ─── Consent ──────────────────────────────────────────────────────────────
@@ -226,10 +229,17 @@ class SnowSEO_Perf_Assets
 	 * The fix also writes an inline `height:auto`, so this is the second of two
 	 * independent guards rather than the only one.
 	 *
+	 * The rule goes through WordPress's own style pipeline: a source-less handle
+	 * registered and enqueued on `wp_enqueue_scripts`, with the CSS attached by
+	 * wp_add_inline_style(). There is no stylesheet to request, and a theme or
+	 * another plugin can dequeue or filter it like any other style.
+	 *
 	 * @return void
 	 */
-	public static function print_sized_image_rule()
+	public static function enqueue_sized_image_rule()
 	{
-		echo "<style id=\"snowseo-sized-images\">:where(img[data-snowseo-sized]){height:auto}</style>\n";
+		wp_register_style(self::SIZED_IMAGE_HANDLE, false, array(), SNOWSEO_VERSION);
+		wp_enqueue_style(self::SIZED_IMAGE_HANDLE);
+		wp_add_inline_style(self::SIZED_IMAGE_HANDLE, ':where(img[data-snowseo-sized]){height:auto}');
 	}
 }

@@ -49,15 +49,31 @@ wp_clear_scheduled_hook( 'snowseo_perf_recanary' );
  *
  * Both markers are stripped. Missing one would leave a year-long Cache-Control
  * rule on a site whose owner has no idea where it came from.
+ *
+ * The site root is resolved with get_home_path(), never from ABSPATH: where
+ * WordPress lives in a subdirectory, ABSPATH is that subdirectory and the
+ * .htaccess these blocks were written to is the one above it. get_home_path()
+ * lives in an admin-only include, so load it explicitly rather than assuming
+ * the caller did, and confirm the result is a real directory - it falls back to
+ * string arithmetic over home_url()/site_url(), which a symlinked or unusually
+ * mapped docroot can defeat. When the site root cannot be resolved, nothing is
+ * touched: a wrong path here means editing a file this plugin never wrote.
+ *
+ * This file deliberately depends on nothing but WordPress. SnowSEO_FS has the
+ * same resolver and the same writer, but a second copy of this plugin installed
+ * under another folder name would already have declared that class, and loading
+ * it again would be a fatal error in the middle of an uninstall.
  */
-$snowseo_htaccess = ( defined( 'ABSPATH' ) ? ABSPATH : '' ) . '.htaccess';
-if ( function_exists( 'get_home_path' ) ) {
-	$snowseo_home = get_home_path();
-	if ( is_string( $snowseo_home ) && '' !== $snowseo_home && is_dir( $snowseo_home ) ) {
-		$snowseo_htaccess = $snowseo_home . '.htaccess';
-	}
+if ( ! function_exists( 'get_home_path' ) ) {
+	require_once ABSPATH . 'wp-admin/includes/file.php';
 }
-if ( file_exists( $snowseo_htaccess ) && wp_is_writable( $snowseo_htaccess ) ) {
+
+$snowseo_home     = get_home_path();
+$snowseo_htaccess = ( is_string( $snowseo_home ) && '' !== $snowseo_home && is_dir( $snowseo_home ) )
+	? $snowseo_home . '.htaccess'
+	: '';
+
+if ( '' !== $snowseo_htaccess && file_exists( $snowseo_htaccess ) && wp_is_writable( $snowseo_htaccess ) ) {
 	$snowseo_ht_contents = file_get_contents( $snowseo_htaccess );
 	$snowseo_ht_markers  = array( 'SnowSEO Performance', 'SnowSEO Cache Headers' );
 	$snowseo_ht_changed  = false;
@@ -84,7 +100,8 @@ if ( file_exists( $snowseo_htaccess ) && wp_is_writable( $snowseo_htaccess ) ) {
 		 * .htaccess, which makes Apache answer 500 for every request on the site,
 		 * with the plugin already gone and nothing left to repair it. rename(2) is
 		 * atomic within a filesystem, so the file is either the old one or the new
-		 * one. SnowSEO_FS is not loaded during uninstall, hence the inline copy.
+		 * one. SnowSEO_FS::write_atomic() is the same routine, deliberately not
+		 * loaded here - see above.
 		 */
 		$snowseo_ht_tmp = $snowseo_htaccess . '.snowseo-tmp';
 		if ( false !== file_put_contents( $snowseo_ht_tmp, $snowseo_ht_contents, LOCK_EX ) ) {
