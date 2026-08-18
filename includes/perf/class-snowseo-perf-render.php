@@ -71,11 +71,13 @@ class SnowSEO_Perf_Render
 	);
 
 	/** Hosts whose stylesheets are fonts or icons, safe to swap. */
+	// phpcs:disable PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Hostnames matched against stylesheets the site already enqueues, never a source. This plugin loads nothing from them; it only decides whether an existing <link> may be loaded without blocking the first paint.
 	const ASYNC_STYLE_HOSTS = array(
 		'fonts.googleapis.com',
 		'use.fontawesome.com',
 		'cdnjs.cloudflare.com',
 	);
+	// phpcs:enable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
 
 	public static function init()
 	{

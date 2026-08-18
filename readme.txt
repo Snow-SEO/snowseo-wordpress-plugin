@@ -3,7 +3,7 @@ Contributors: kapybara
 Tags: seo, ai, content, publishing, ai-content
 Requires at least: 5.7
 Tested up to: 7.0
-Stable tag: 1.3.8
+Stable tag: 1.3.9
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,7 +26,7 @@ The plugin itself does not generate content. All article generation, editing, an
 
 = Source code =
 
-The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.8`.
+The complete human-readable source of this plugin is published at https://github.com/Snow-SEO/snowseo-wordpress-plugin under GPLv2 or later. That repository includes the uncompiled React source for the admin screen (`src/`), the PHP that ships with the plugin, and BUILD.md with the exact steps to reproduce the compiled `build/` assets distributed here (`npm install && npm run build`). Every release is tagged there, for example `v1.3.9`.
 
 = External service: SnowSEO =
 
@@ -102,6 +102,9 @@ When SnowSEO sends a post with status `scheduled` and a future date, the plugin 
 When SnowSEO publishes a post via server-to-server call (authenticated with the site token rather than a WordPress login), the post is assigned to the first administrator on the site. If you want a specific user as the author of incoming posts, ensure that user is an administrator and has the lowest user ID among administrators.
 
 == Changelog ==
+
+= 1.3.9 =
+* No change to what the plugin does. The list of font and CDN hostnames used to add browser connection hints is now annotated for WordPress's Plugin Check tool, which read the list as though the plugin were loading files from those hosts. It never has: the list is only ever matched against what your own site already loads.
 
 = 1.3.8 =
 * The small layout rule SnowSEO adds for images it has sized is now loaded through WordPress's own stylesheet system instead of being written straight into the page head. Your pages look exactly the same, and a theme can now switch the rule off like any other stylesheet.

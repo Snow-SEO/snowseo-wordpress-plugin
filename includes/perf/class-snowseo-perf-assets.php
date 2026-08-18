@@ -53,6 +53,7 @@ class SnowSEO_Perf_Assets
 	 */
 	public static function allowlist()
 	{
+		// phpcs:disable PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Hostnames to match against, never a source. Nothing is loaded from these: the list is intersected with what the site already enqueues and only ever yields a <link rel="preconnect"|"dns-prefetch"> for a host the site talks to anyway. Every asset this plugin ships is served from the plugin directory.
 		return array(
 			self::GOOGLE_FONTS_CSS       => 'preconnect',
 			self::GOOGLE_FONTS_FILES     => 'preconnect',
@@ -69,6 +70,7 @@ class SnowSEO_Perf_Assets
 			'www.google-analytics.com'   => 'dns-prefetch',
 			'connect.facebook.net'       => 'dns-prefetch',
 		);
+		// phpcs:enable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
 	}
 
 	public static function init()
