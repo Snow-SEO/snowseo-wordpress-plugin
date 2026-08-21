@@ -3,7 +3,7 @@ Contributors: kapybara
 Tags: seo, ai, content, publishing, ai-content
 Requires at least: 5.7
 Tested up to: 7.0
-Stable tag: 1.3.9
+Stable tag: 1.3.10
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -102,6 +102,9 @@ When SnowSEO sends a post with status `scheduled` and a future date, the plugin 
 When SnowSEO publishes a post via server-to-server call (authenticated with the site token rather than a WordPress login), the post is assigned to the first administrator on the site. If you want a specific user as the author of incoming posts, ensure that user is an administrator and has the lowest user ID among administrators.
 
 == Changelog ==
+
+= 1.3.10 =
+* Alt text that you have already written is now left alone. When SnowSEO fixes image alt text in your media library, any image that already has alt text is skipped and reported as skipped, instead of being replaced with a generated description. Images with no alt text are filled in as before.
 
 = 1.3.9 =
 * No change to what the plugin does. The list of font and CDN hostnames used to add browser connection hints is now annotated for WordPress's Plugin Check tool, which read the list as though the plugin were loading files from those hosts. It never has: the list is only ever matched against what your own site already loads.

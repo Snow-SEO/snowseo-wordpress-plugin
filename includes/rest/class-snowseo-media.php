@@ -63,6 +63,7 @@ class SnowSEO_Media
 
 		$results = array();
 		$updated = 0;
+		$skipped = 0;
 
 		foreach ($items as $item) {
 			$url = isset($item['url']) ? esc_url_raw($item['url']) : '';
@@ -90,6 +91,30 @@ class SnowSEO_Media
 				continue;
 			}
 
+			// Never silently replace alt text the owner already wrote.
+			//
+			// The crawler flags an image from the RENDERED page, and plenty of
+			// themes and page builders emit <img src> without ever reading
+			// _wp_attachment_image_alt. On those sites the attachment already
+			// has good alt, the page shows none, and overwriting would destroy
+			// real content, spend a credit, and still not fix the page - the
+			// theme goes on not rendering it, so the issue returns next audit.
+			// Report it instead, so the caller can say the alt exists and the
+			// theme is at fault. `force` is the deliberate override.
+			$existing = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
+			if (empty($item['force']) && is_string($existing) && '' !== trim($existing)) {
+				$skipped++;
+				$results[] = array(
+					'url'          => $url,
+					'success'      => false,
+					'skipped'      => true,
+					'reason'       => 'already_has_alt',
+					'existingAlt'  => $existing,
+					'attachmentId' => $attachment_id,
+				);
+				continue;
+			}
+
 			update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt);
 			$updated++;
 			$results[] = array(
@@ -102,6 +127,7 @@ class SnowSEO_Media
 		return new WP_REST_Response(array(
 			'success' => true,
 			'updated' => $updated,
+			'skipped' => $skipped,
 			'results' => $results,
 		), 200);
 	}

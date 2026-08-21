@@ -228,6 +228,28 @@ t('one attachment updated', isset($alt_data['updated']) && 1 === (int) $alt_data
 t('alt text written to _wp_attachment_image_alt', get_post_meta($att_id, '_wp_attachment_image_alt', true) === 'a verified alt string');
 t('unresolvable url reported, not fatal', isset($alt_data['results'][1]['success']) && false === $alt_data['results'][1]['success']);
 
+// The guard: an attachment that already has alt must never be overwritten.
+// This is the theme-not-rendering case - the crawler reports the image because
+// the page shows no alt, but the media library value is real content.
+$alt_req2 = new WP_REST_Request('POST', '/snowseo/v1/media/alt');
+$alt_req2->set_param('items', array(
+	array('url' => $att_url, 'alt' => 'SHOULD NOT REPLACE'),
+));
+$alt_res2  = SnowSEO_Media::handle_update_media_alt($alt_req2);
+$alt_data2 = is_wp_error($alt_res2) ? array() : $alt_res2->get_data();
+t('existing alt is skipped, not overwritten', isset($alt_data2['skipped']) && 1 === (int) $alt_data2['skipped'], wp_json_encode($alt_data2));
+t('skip reports why', 'already_has_alt' === ($alt_data2['results'][0]['reason'] ?? ''));
+t('skip returns the existing value', 'a verified alt string' === ($alt_data2['results'][0]['existingAlt'] ?? ''));
+t('alt text on disk is unchanged', get_post_meta($att_id, '_wp_attachment_image_alt', true) === 'a verified alt string');
+
+// force is the deliberate override.
+$alt_req3 = new WP_REST_Request('POST', '/snowseo/v1/media/alt');
+$alt_req3->set_param('items', array(
+	array('url' => $att_url, 'alt' => 'forced replacement', 'force' => true),
+));
+SnowSEO_Media::handle_update_media_alt($alt_req3);
+t('force overrides the guard', get_post_meta($att_id, '_wp_attachment_image_alt', true) === 'forced replacement');
+
 echo "\n7. connect handshake (backend mocked)\n";
 // Snapshot before touching them - this box may already be connected.
 snowseo_snapshot_option(SnowSEO_Rest_API::OPTION_API_KEY);
